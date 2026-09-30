@@ -22,6 +22,7 @@ export const products = mysqlTable("products", {
   salePriceCents: int("salePriceCents"),
   badge: varchar("badge", { length: 24 }),
   inStock: boolean("inStock").default(true).notNull(),
+  inventoryQuantity: int("inventoryQuantity"),
   featured: boolean("featured").default(false).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

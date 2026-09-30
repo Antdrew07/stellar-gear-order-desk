@@ -1,4 +1,6 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { clearAdminSession, establishAdminSession, validateAdminCredentials } from "./adminAuth";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -8,6 +10,7 @@ import {
   deleteProduct,
   getCatalog,
   getOrders,
+  getPublicCatalog,
   submitOrder,
   updateOrderStatus,
   updateProduct,
@@ -22,6 +25,7 @@ const productInput = z.object({
   salePriceCents: z.number().int().min(0).max(2_000_000).nullable().optional(),
   badge: z.string().trim().max(24).nullable().optional(),
   inStock: z.boolean(),
+  inventoryQuantity: z.number().int().min(0).max(1_000_000),
   featured: z.boolean(),
   sortOrder: z.number().int().min(0).max(10_000),
 });
@@ -36,16 +40,39 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
+  admin: router({
+    session: publicProcedure.query(({ ctx }) => ({ signedIn: ctx.isDashboardAdmin })),
+    login: publicProcedure.input(z.object({
+      username: z.string().trim().min(1).max(120),
+      password: z.string().min(1).max(256),
+    })).mutation(async ({ ctx, input }) => {
+      if (!(await validateAdminCredentials(input.username, input.password))) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
+      }
+      await establishAdminSession(ctx.res, input.username);
+      return { signedIn: true } as const;
+    }),
+    logout: publicProcedure.mutation(({ ctx }) => {
+      clearAdminSession(ctx.res);
+      return { signedOut: true } as const;
+    }),
+  }),
   catalog: router({
-    snapshot: publicProcedure.query(() => getCatalog()),
+    snapshot: publicProcedure.query(() => getPublicCatalog()),
+    adminSnapshot: adminProcedure.query(() => getCatalog()),
     create: adminProcedure.input(productInput).mutation(({ input }) => createProduct({
       name: input.name, description: input.description ?? null, category: input.category,
       priceCents: input.priceCents, salePriceCents: input.salePriceCents ?? null, badge: input.badge ?? null,
-      inStock: input.inStock, featured: input.featured, sortOrder: input.sortOrder,
+      inStock: input.inStock, inventoryQuantity: input.inventoryQuantity, featured: input.featured, sortOrder: input.sortOrder,
     })),
     update: adminProcedure.input(productInput.extend({ id: z.number().int().positive() })).mutation(({ input }) => {
       const { id, ...product } = input;
-      return updateProduct(id, { ...product, description: product.description ?? null, salePriceCents: product.salePriceCents ?? null, badge: product.badge ?? null });
+      return updateProduct(id, {
+        ...product,
+        description: product.description ?? null,
+        salePriceCents: product.salePriceCents ?? null,
+        badge: product.badge ?? null,
+      });
     }),
     remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteProduct(input.id)),
     updateShipping: adminProcedure.input(z.object({ shippingCents: z.number().int().min(0).max(100_000) })).mutation(({ input }) => updateShipping(input.shippingCents)),

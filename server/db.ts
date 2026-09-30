@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { customAlphabet } from "nanoid";
 import {
@@ -8,6 +8,7 @@ import {
   orders,
   products,
   type InsertUser,
+  type Product,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -24,6 +25,10 @@ const seedProducts = [
 ] as const;
 
 const orderAlphabet = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
+
+export function productIsAvailable(product: Pick<Product, "inStock" | "inventoryQuantity">) {
+  return product.inStock && (product.inventoryQuantity === null || product.inventoryQuantity > 0);
+}
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -79,7 +84,7 @@ async function ensureCatalogSeeded() {
   if (!db) throw new Error("Database is not available");
   const existingProduct = await db.select({ id: products.id }).from(products).limit(1);
   if (!existingProduct.length) {
-    await db.insert(products).values(seedProducts.map(product => ({ ...product, inStock: true })));
+    await db.insert(products).values(seedProducts.map(product => ({ ...product, inStock: true, inventoryQuantity: null })));
   }
   const settings = await db.select().from(catalogSettings).where(eq(catalogSettings.id, 1)).limit(1);
   if (!settings.length) await db.insert(catalogSettings).values({ id: 1, shippingCents: 2000 });
@@ -93,6 +98,17 @@ export async function getCatalog() {
     db.select().from(catalogSettings).where(eq(catalogSettings.id, 1)).limit(1),
   ]);
   return { products: productRows, settings: settingRows[0] };
+}
+
+export async function getPublicCatalog() {
+  const catalog = await getCatalog();
+  return {
+    settings: catalog.settings,
+    products: catalog.products.map(product => {
+      const { inventoryQuantity: _inventoryQuantity, ...publicProduct } = product;
+      return { ...publicProduct, inStock: productIsAvailable(product) };
+    }),
+  };
 }
 
 export async function createProduct(input: Omit<InsertProduct, "id" | "createdAt" | "updatedAt">) {
@@ -124,13 +140,19 @@ type CustomerDetails = {
 
 export async function submitOrder(customer: CustomerDetails, submittedItems: SubmittedItem[]) {
   const db = await ensureCatalogSeeded();
-  const uniqueItems = submittedItems.filter(item => item.quantity > 0);
-  const ids = [...new Set(uniqueItems.map(item => item.productId))];
-  const liveProducts = await db.select().from(products).where(inArray(products.id, ids));
+  const quantities = new Map<number, number>();
+  for (const item of submittedItems) {
+    if (item.quantity > 0) quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity);
+  }
+  const uniqueItems = [...quantities.entries()].map(([productId, quantity]) => ({ productId, quantity }));
+  const ids = uniqueItems.map(item => item.productId);
+  const liveProducts = ids.length ? await db.select().from(products).where(inArray(products.id, ids)) : [];
   const productMap = new Map(liveProducts.map(product => [product.id, product]));
   const lines = uniqueItems.map(item => {
     const product = productMap.get(item.productId);
-    if (!product || !product.inStock) throw new Error("One or more selected products are no longer available.");
+    if (!product || !productIsAvailable(product) || (product.inventoryQuantity !== null && product.inventoryQuantity < item.quantity)) {
+      throw new Error("One or more selected products are out of stock.");
+    }
     const unitPriceCents = product.salePriceCents ?? product.priceCents;
     return { product, quantity: item.quantity, unitPriceCents, lineTotalCents: unitPriceCents * item.quantity };
   });
@@ -142,6 +164,14 @@ export async function submitOrder(customer: CustomerDetails, submittedItems: Sub
   const orderNumber = `SG-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${orderAlphabet()}`;
 
   const result = await db.transaction(async tx => {
+    for (const line of lines) {
+      if (line.product.inventoryQuantity === null) continue;
+      const [inventoryUpdate] = await tx.update(products)
+        .set({ inventoryQuantity: sql`${products.inventoryQuantity} - ${line.quantity}` })
+        .where(and(eq(products.id, line.product.id), gte(products.inventoryQuantity, line.quantity)));
+      if (Number(inventoryUpdate.affectedRows) !== 1) throw new Error("One or more selected products just sold out.");
+    }
+
     const orderResult = await tx.insert(orders).values({
       orderNumber, status: "new", ...customer, address2: customer.address2 || null, notes: customer.notes || null,
       subtotalCents, shippingCents, totalCents,

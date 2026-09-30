@@ -40,7 +40,7 @@ export default function Home() {
           <div className="sheet-row sheet-row--head"><span>Item</span><span>Price</span><span>Qty</span><span>Total</span></div>
           {catalog.isLoading ? <div className="sheet-loading">Loading items…</div> : rows.length ? rows.map(({ product, quantity, priceCents, lineTotal }) => (
             <div className={`sheet-row ${!product.inStock ? "sheet-row--unavailable" : ""}`} key={product.id}>
-              <div className="sheet-item"><strong>{product.name}</strong>{!product.inStock && <small>Unavailable</small>}</div>
+              <div className="sheet-item"><strong>{product.name}</strong>{!product.inStock && <small>Out of stock</small>}</div>
               <div className="sheet-price">{product.salePriceCents ? <><s>{money(product.priceCents)}</s><b>{money(priceCents)}</b></> : <b>{money(priceCents)}</b>}</div>
               <div className="sheet-qty">{product.inStock ? <><button aria-label={`Remove ${product.name}`} onClick={() => setQuantity(product.id, quantity - 1)} disabled={!quantity}><Minus size={15} /></button><span>{quantity}</span><button aria-label={`Add ${product.name}`} onClick={() => setQuantity(product.id, quantity + 1)}><Plus size={15} /></button></> : <span>—</span>}</div>
               <strong className="sheet-line-total">{quantity ? money(lineTotal) : "—"}</strong>

@@ -1,6 +1,6 @@
 {
   "routes": [
-    { "path": "/", "title": "Stellar Gear Order Desk" },
-    { "path": "/admin", "title": "Stellar Gear Admin" }
+    { "path": "/", "title": "Stellar Gear Price Sheet" },
+    { "path": "/admin", "title": "Stellar Gear Admin Inventory" }
   ]
 }

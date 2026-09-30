@@ -1,24 +1,28 @@
 # Stellar Gear — Design Brief
 
-## Revised direction: Simple Price Sheet
+## Customer price sheet
 
-The app now prioritizes one job only: **show an item, set a quantity, and see the total**. The fire-red, black, and white Stellar Gear identity remains, but the customer-facing screen intentionally avoids marketing copy, visual product cards, shipping, customer forms, request flows, and payment language.
+The public app does one job: **show an item, set a quantity, and see the total**. It keeps the user-supplied Stellar Gear black, red, and metallic identity while avoiding marketing copy, payment language, and checkout complexity.
 
-### Core principles
 - One clear list of customer-editable items.
 - One price per line, quantity controls, and a running grand total.
-- No category filters, badges, explanatory sections, or checkout steps on the price sheet.
-- A small separate Admin page manages item names, prices, availability, and removal.
+- Products that are manually unavailable or have zero known inventory are clearly marked **Out of stock** and cannot be added.
 
-### Visual direction
-- Near-black page background, warm-white price sheet, and a small signal-red accent.
-- Simple four-column table on desktop: **Item / Price / Qty / Total**.
-- Compact single-column item rows on mobile.
-- The existing custom Stellar Gear flare logo remains in the header and favicon.
+## Password-protected admin workspace
 
-### Typography
-- Direct sans-serif text with a restrained condensed uppercase title.
-- Large, obvious total; muted supporting labels only where needed.
+`/admin` is an operational workspace behind a dedicated dashboard password—not the public price sheet.
 
-### Brand voice
-**Clear, quiet, and practical.** No jargon; the interface tells the user only what they need to do.
+- A simple password entry screen, with no product details exposed until access is granted.
+- A compact inventory summary and table focused on **Item / Price / Inventory / Status**.
+- A direct form for adding and editing products, including price, sale price, inventory count, and manual availability.
+- Clear red out-of-stock treatment and neutral metallic status treatment.
+
+## Visual direction
+
+- Near-black workspace background, warm-white price sheet, metallic-silver table accents, and signal-red action/status highlights.
+- The supplied Stellar Gear bodybuilding logo anchors the public sheet and the admin workspace.
+- Direct sans-serif text with a restrained condensed uppercase title; no jargon.
+
+## Brand voice
+
+**Clear, quiet, and practical.** The interface tells the owner only what they need to manage products and inventory.
