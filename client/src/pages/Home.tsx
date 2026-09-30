@@ -32,13 +32,7 @@ export default function Home() {
         <Link href="/admin" className="sheet-manage">Manage items</Link>
       </header>
       <main className="price-sheet">
-        <section className="brand-hero" aria-label="Stellar Gear">
-          <div className="brand-hero__copy">
-            <p>PRICE SHEET</p>
-            <h1>STELLAR GEAR</h1>
-            <span>SELECT ITEMS. TOTAL UPDATES AUTOMATICALLY.</span>
-          </div>
-        </section>
+        <div className="sheet-title"><p>STELLAR GEAR</p><h1>Price Sheet</h1><span>Choose quantities. The total updates automatically.</span></div>
         <section className="sheet-table" aria-label="Product price sheet">
           <div className="sheet-row sheet-row--head"><span>Item</span><span>Price</span><span>Qty</span><span>Total</span></div>
           {catalog.isLoading ? <div className="sheet-loading">Loading items…</div> : rows.length ? rows.map(({ product, quantity, priceCents, lineTotal }) => (
