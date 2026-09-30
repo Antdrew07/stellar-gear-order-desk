@@ -69,3 +69,19 @@ h1,h2,h3,p { margin-top:0; }.hero h1,.admin-hero h1,.admin-gate h1 { font: 800 c
 .admin-list-heading { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:15px; }.admin-list-heading > div:first-child { display:flex; align-items:baseline; gap:8px; }.admin-list-heading h2 { margin:0; font:800 34px/.85 "Barlow Condensed",Impact,sans-serif; text-transform:uppercase; }.admin-list-heading span { color:#77736d; font-size:11px; }.inventory-filters { display:flex; gap:5px; }.inventory-filters button { min-height:31px; padding:0 10px; border:1px solid #bcb8b0; background:transparent; color:#4e4b47; font-size:10px; font-weight:900; }.inventory-filters button.is-active { border-color:#111214; background:#111214; color:#fff; }
 .inventory-table .simple-item-row { grid-template-columns:minmax(0,1fr) 115px 100px 108px 84px; }.inventory-table .simple-item-row > span:nth-child(4) { display:flex; justify-content:flex-start; }.inventory-zero { color:#b32620; font-weight:900; }.stock-status { display:inline-flex; align-items:center; min-height:22px; padding:0 7px; font-size:8px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }.stock-status--available { background:#dce8df; color:#235836; }.stock-status--out { background:#f4d9d7; color:#98251e; }.simple-editor label small { display:block; max-width:290px; color:#77736b; font-size:9px; font-weight:700; letter-spacing:0; line-height:1.4; text-transform:none; }
 @media (max-width:720px) { .inventory-summary { grid-template-columns:repeat(2,1fr); }.inventory-table .simple-item-row { grid-template-columns:minmax(0,1fr) 75px 78px; }.inventory-table .simple-item-row > span:nth-child(4) { grid-column:1/-1; }.inventory-table .simple-item-row > div { grid-column:1/-1; }.admin-list-heading { align-items:start; flex-direction:column; }.admin-header-actions { gap:2px; }.simple-signout { padding:0 5px; }.inventory-filters { width:100%; }.inventory-filters button { flex:1; } }
+
+
+/* Mobile-first Stellar Gear sign-in hero */
+.admin-login-gate { min-height:100vh; align-items:stretch; justify-content:flex-start; gap:0; padding:0; }
+.admin-login-hero { min-height:250px; display:grid; place-items:center; padding:36px; background:radial-gradient(circle at 50% 44%,rgba(237,27,36,.30),transparent 34%),linear-gradient(135deg,#170307 0%,#050506 68%); border-bottom:1px solid rgba(255,48,67,.42); }
+.admin-login-hero .admin-logo-mini { width:200px; height:200px; margin:0; }
+.admin-login-content { width:min(520px,100%); display:flex; flex-direction:column; align-items:flex-start; gap:17px; padding:50px 40px 70px; background:radial-gradient(circle at 18% 6%,rgba(237,27,36,.18),transparent 28%),#080809; }
+.admin-login-content > p { margin:0; color:#ff3043; font-size:9px; font-weight:900; letter-spacing:.16em; }
+.admin-login-content h1 { margin:0; font:800 62px/.85 "Barlow Condensed",Impact,sans-serif; text-transform:uppercase; letter-spacing:-.03em; }
+.admin-login-content > span { max-width:410px; color:#bbbfc2; line-height:1.65; }
+.admin-login-content > a { color:#ff3043; font-size:11px; font-weight:800; }
+.password-input { position:relative; display:block; }.password-input input { padding-right:62px; }.password-input button { position:absolute; top:1px; right:1px; bottom:1px; min-width:54px; border-left:1px solid #555a60; background:#17191c; color:#ff7380; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+@media (max-width:640px) { .admin-login-hero { min-height:100svh; padding:30px 20px; }.admin-login-hero .admin-logo-mini { width:min(84vw,390px); height:min(84vw,390px); }.admin-login-content { min-height:100svh; padding:54px 28px 72px; }.admin-login-content h1 { font-size:clamp(58px,17vw,78px); }.admin-login-form { width:100%; }.admin-login-form .simple-primary { min-width:126px; min-height:49px; } }
+
+.password-input { width:100%; }
+.password-input input { width:100% !important; }
