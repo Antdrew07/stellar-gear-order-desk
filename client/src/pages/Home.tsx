@@ -28,11 +28,14 @@ export default function Home() {
   return (
     <div className="sheet-shell">
       <header className="sheet-header">
-        <Link href="/" className="sheet-brand"><img src="/stellar-mark.svg" alt="Stellar Gear" /><span>STELLAR GEAR</span></Link>
+        <Link href="/" className="sheet-brand"><span>STELLAR GEAR</span></Link>
         <Link href="/admin" className="sheet-manage">Manage items</Link>
       </header>
       <main className="price-sheet">
-        <div className="sheet-title"><p>STELLAR GEAR</p><h1>Price Sheet</h1><span>Choose quantities. The total updates automatically.</span></div>
+        <section className="sheet-identity" aria-label="Stellar Gear logo and price sheet">
+          <div className="sheet-logo-wrap"><img src="/stellar-gear-logo.png" alt="Stellar Gear bodybuilding logo" /></div>
+          <div className="sheet-title"><p>STELLAR GEAR</p><h1>Price Sheet</h1><span>Choose quantities. The total updates automatically.</span></div>
+        </section>
         <section className="sheet-table" aria-label="Product price sheet">
           <div className="sheet-row sheet-row--head"><span>Item</span><span>Price</span><span>Qty</span><span>Total</span></div>
           {catalog.isLoading ? <div className="sheet-loading">Loading items…</div> : rows.length ? rows.map(({ product, quantity, priceCents, lineTotal }) => (
