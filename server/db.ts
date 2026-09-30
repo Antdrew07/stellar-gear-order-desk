@@ -115,10 +115,26 @@ export async function getPublicCatalog() {
   };
 }
 
-export async function createProduct(input: Omit<InsertProduct, "id" | "createdAt" | "updatedAt">) {
+export async function createProduct(input: Omit<InsertProduct, "id" | "createdAt" | "updatedAt" | "sortOrder">) {
   const db = await ensureCatalogSeeded();
-  const result = await db.insert(products).values(input);
+  const [{ maxSort }] = await db.select({ maxSort: sql<number>`COALESCE(MAX(${products.sortOrder}), -1)` }).from(products);
+  const result = await db.insert(products).values({ ...input, sortOrder: Number(maxSort) + 1 });
   return Number(result[0].insertId);
+}
+
+export async function createSection(title: string) {
+  return createProduct({
+    kind: "section", name: title, description: null, category: "Section",
+    priceCents: 0, salePriceCents: null, badge: null, inStock: true,
+    inventoryQuantity: null, featured: false,
+  });
+}
+
+export async function reorderCatalog(ids: number[]) {
+  const db = await ensureCatalogSeeded();
+  for (let index = 0; index < ids.length; index++) {
+    await db.update(products).set({ sortOrder: index }).where(eq(products.id, ids[index]));
+  }
 }
 
 export async function updateProduct(id: number, input: Partial<Omit<InsertProduct, "id" | "createdAt" | "updatedAt">>) {
@@ -178,7 +194,7 @@ export async function startBitcoinCheckout(customer: CustomerDetails, submittedI
   const productMap = new Map(liveProducts.map(product => [product.id, product]));
   const lines = uniqueItems.map(item => {
     const product = productMap.get(item.productId);
-    if (!product || !productIsAvailable(product) || (product.inventoryQuantity !== null && product.inventoryQuantity < item.quantity)) {
+    if (!product || product.kind !== "product" || !productIsAvailable(product) || (product.inventoryQuantity !== null && product.inventoryQuantity < item.quantity)) {
       throw new Error("One or more selected products are out of stock.");
     }
     const unitPriceCents = product.salePriceCents ?? product.priceCents;

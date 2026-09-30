@@ -29,6 +29,13 @@
       "when": 1790781124637,
       "tag": "0003_acoustic_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1790807742635,
+      "tag": "0004_silent_phalanx",
+      "breakpoints": true
     }
   ]
 }

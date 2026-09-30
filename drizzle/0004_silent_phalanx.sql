@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `kind` enum('product','section') DEFAULT 'product' NOT NULL;

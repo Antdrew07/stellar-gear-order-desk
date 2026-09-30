@@ -8,11 +8,13 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   createProduct,
+  createSection,
   deleteProduct,
   getBitcoinCheckoutStatus,
   getCatalog,
   getOrders,
   getPublicCatalog,
+  reorderCatalog,
   startBitcoinCheckout,
   updateOrderStatus,
   updateProduct,
@@ -28,7 +30,6 @@ const productInput = z.object({
   inStock: z.boolean(),
   inventoryQuantity: z.number().int().min(0).max(1_000_000),
   featured: z.boolean(),
-  sortOrder: z.number().int().min(0).max(10_000),
 });
 
 const checkoutInput = z.object({
@@ -77,9 +78,9 @@ export const appRouter = router({
     snapshot: publicProcedure.query(() => getPublicCatalog()),
     adminSnapshot: adminProcedure.query(() => getCatalog()),
     create: adminProcedure.input(productInput).mutation(({ input }) => createProduct({
-      name: input.name, description: input.description ?? null, category: input.category,
+      kind: "product", name: input.name, description: input.description ?? null, category: input.category,
       priceCents: input.priceCents, salePriceCents: input.salePriceCents ?? null, badge: input.badge ?? null,
-      inStock: input.inStock, inventoryQuantity: input.inventoryQuantity, featured: input.featured, sortOrder: input.sortOrder,
+      inStock: input.inStock, inventoryQuantity: input.inventoryQuantity, featured: input.featured,
     })),
     update: adminProcedure.input(productInput.extend({ id: z.number().int().positive() })).mutation(({ input }) => {
       const { id, ...product } = input;
@@ -91,6 +92,9 @@ export const appRouter = router({
       });
     }),
     remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteProduct(input.id)),
+    addSection: adminProcedure.input(z.object({ title: z.string().trim().min(1).max(120) })).mutation(({ input }) => createSection(input.title)),
+    updateSection: adminProcedure.input(z.object({ id: z.number().int().positive(), title: z.string().trim().min(1).max(120) })).mutation(({ input }) => updateProduct(input.id, { name: input.title })),
+    reorder: adminProcedure.input(z.object({ ids: z.array(z.number().int().positive()).max(1000) })).mutation(({ input }) => reorderCatalog(input.ids)),
   }),
   orders: router({
     startBitcoinCheckout: publicProcedure.input(checkoutInput).mutation(async ({ input }) => {

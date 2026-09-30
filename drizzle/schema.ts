@@ -15,6 +15,7 @@ export const users = mysqlTable("users", {
 
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("kind", ["product", "section"]).default("product").notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   description: text("description"),
   category: varchar("category", { length: 80 }).notNull(),
