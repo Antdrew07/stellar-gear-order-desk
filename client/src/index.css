@@ -81,7 +81,7 @@ h1,h2,h3,p { margin-top:0; }.hero h1,.admin-hero h1,.admin-gate h1 { font: 800 c
 .admin-login-content > span { max-width:410px; color:#bbbfc2; line-height:1.65; }
 .admin-login-content > a { color:#ff3043; font-size:11px; font-weight:800; }
 .password-input { position:relative; display:block; }.password-input input { padding-right:62px; }.password-input button { position:absolute; top:1px; right:1px; bottom:1px; min-width:54px; border-left:1px solid #555a60; background:#17191c; color:#ff7380; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
-@media (max-width:640px) { .admin-login-hero { min-height:100svh; padding:30px 20px; }.admin-login-hero .admin-logo-mini { width:min(84vw,390px); height:min(84vw,390px); }.admin-login-content { min-height:100svh; padding:54px 28px 72px; }.admin-login-content h1 { font-size:clamp(58px,17vw,78px); }.admin-login-form { width:100%; }.admin-login-form .simple-primary { min-width:126px; min-height:49px; } }
+@media (max-width:640px) { .admin-login-hero { min-height:360px; padding:28px 20px; }.admin-login-hero .admin-logo-mini { width:min(68vw,290px); height:min(68vw,290px); }.admin-login-content { min-height:auto; padding:48px 28px 72px; }.admin-login-content h1 { font-size:clamp(58px,17vw,78px); }.admin-login-form { width:100%; }.admin-login-form .simple-primary { min-width:126px; min-height:49px; } }
 
 .password-input { width:100%; }
 .password-input input { width:100% !important; }
