@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getBitcoinQuote } from "./bitcoin";
 import { clearAdminSession, establishAdminSession, validateAdminCredentials } from "./adminAuth";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -8,13 +9,13 @@ import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   createProduct,
   deleteProduct,
+  getBitcoinCheckoutStatus,
   getCatalog,
   getOrders,
   getPublicCatalog,
-  submitOrder,
+  startBitcoinCheckout,
   updateOrderStatus,
   updateProduct,
-  updateShipping,
 } from "./db";
 
 const productInput = z.object({
@@ -28,6 +29,21 @@ const productInput = z.object({
   inventoryQuantity: z.number().int().min(0).max(1_000_000),
   featured: z.boolean(),
   sortOrder: z.number().int().min(0).max(10_000),
+});
+
+const checkoutInput = z.object({
+  customer: z.object({
+    customerName: z.string().trim().min(2).max(120),
+    email: z.string().trim().email().max(320),
+    phone: z.string().trim().min(7).max(48),
+    address1: z.string().trim().min(3).max(180),
+    address2: z.string().trim().max(180).optional(),
+    city: z.string().trim().min(2).max(100),
+    state: z.string().trim().min(2).max(100),
+    postalCode: z.string().trim().min(3).max(32),
+    notes: z.string().trim().max(2_000).optional(),
+  }),
+  items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(1).max(25) })).min(1),
 });
 
 export const appRouter = router({
@@ -75,19 +91,28 @@ export const appRouter = router({
       });
     }),
     remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteProduct(input.id)),
-    updateShipping: adminProcedure.input(z.object({ shippingCents: z.number().int().min(0).max(100_000) })).mutation(({ input }) => updateShipping(input.shippingCents)),
   }),
   orders: router({
-    submit: publicProcedure.input(z.object({
-      customer: z.object({
-        customerName: z.string().trim().min(2).max(120), email: z.string().trim().email().max(320),
-        phone: z.string().trim().min(7).max(48), address1: z.string().trim().min(3).max(180),
-        address2: z.string().trim().max(180).optional(), city: z.string().trim().min(2).max(100),
-        state: z.string().trim().min(2).max(100), postalCode: z.string().trim().min(3).max(32),
-        notes: z.string().trim().max(2000).optional(),
-      }),
-      items: z.array(z.object({ productId: z.number().int().positive(), quantity: z.number().int().min(1).max(25) })).min(1),
-    })).mutation(({ input }) => submitOrder(input.customer, input.items)),
+    startBitcoinCheckout: publicProcedure.input(checkoutInput).mutation(async ({ input }) => {
+      try {
+        const quote = await getBitcoinQuote();
+        return await startBitcoinCheckout(input.customer, input.items, quote);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to start Bitcoin checkout.";
+        if (message.includes("out of stock") || message.includes("Add at least")) throw new TRPCError({ code: "BAD_REQUEST", message });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Bitcoin checkout is temporarily unavailable. Please try again." });
+      }
+    }),
+    paymentStatus: publicProcedure.input(z.object({ paymentToken: z.string().trim().regex(/^[1-9A-HJ-NP-Za-km-z]{24,48}$/) })).query(async ({ input }) => {
+      try {
+        const payment = await getBitcoinCheckoutStatus(input.paymentToken);
+        if (!payment) throw new TRPCError({ code: "NOT_FOUND", message: "This payment link was not found." });
+        return payment;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to check Bitcoin payment status. Please try again." });
+      }
+    }),
     list: adminProcedure.query(() => getOrders()),
     updateStatus: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "reviewing", "confirmed", "closed"]) })).mutation(({ input }) => updateOrderStatus(input.id, input.status)),
   }),

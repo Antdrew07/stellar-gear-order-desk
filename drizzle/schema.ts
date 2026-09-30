@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /** Core user table backing the supplied Manus OAuth flow. */
 export const users = mysqlTable("users", {
@@ -51,6 +51,14 @@ export const orders = mysqlTable("orders", {
   subtotalCents: int("subtotalCents").notNull(),
   shippingCents: int("shippingCents").notNull(),
   totalCents: int("totalCents").notNull(),
+  paymentStatus: mysqlEnum("paymentStatus", ["awaiting", "received", "confirmed"]).default("awaiting").notNull(),
+  paymentToken: varchar("paymentToken", { length: 48 }).unique(),
+  bitcoinAmountSats: bigint("bitcoinAmountSats", { mode: "number" }),
+  bitcoinRateUsdCents: int("bitcoinRateUsdCents"),
+  bitcoinAddress: varchar("bitcoinAddress", { length: 90 }),
+  paymentTxid: varchar("paymentTxid", { length: 64 }),
+  paymentReceivedAt: timestamp("paymentReceivedAt"),
+  paymentConfirmedAt: timestamp("paymentConfirmedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

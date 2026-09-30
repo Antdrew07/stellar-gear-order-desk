@@ -1,6 +1,7 @@
 {
   "routes": [
     { "path": "/", "title": "Stellar Gear Price Sheet" },
+    { "path": "/checkout/:paymentToken", "title": "Stellar Gear Bitcoin Checkout" },
     { "path": "/admin", "title": "Stellar Gear Admin Inventory" }
   ]
 }
