@@ -1,4 +1,6 @@
 export const COOKIE_NAME = "webdev_app_session";
+export const ADMIN_DASHBOARD_SESSION_HEADER = "x-stellar-gear-admin";
+export const ADMIN_DASHBOARD_SESSION_STORAGE_KEY = "stellar-gear-admin-session";
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';

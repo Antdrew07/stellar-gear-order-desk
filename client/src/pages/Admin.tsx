@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { ADMIN_DASHBOARD_SESSION_STORAGE_KEY } from "@shared/const";
 import { ArrowLeft, Boxes, LogOut, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -34,11 +35,11 @@ export default function Admin() {
 
   const refresh = () => Promise.all([utils.catalog.adminSnapshot.invalidate(), utils.catalog.snapshot.invalidate()]);
   const login = trpc.admin.login.useMutation({
-    onSuccess: () => { setPassword(""); toast.success("Admin dashboard unlocked"); void utils.admin.session.invalidate(); },
+    onSuccess: result => { try { sessionStorage.setItem(ADMIN_DASHBOARD_SESSION_STORAGE_KEY, result.sessionToken); } catch {} setPassword(""); toast.success("Admin dashboard unlocked"); void utils.admin.session.invalidate(); },
     onError: error => toast.error(error.message),
   });
   const logout = trpc.admin.logout.useMutation({
-    onSuccess: () => { toast.success("Signed out"); void utils.admin.session.invalidate(); void utils.catalog.adminSnapshot.invalidate(); },
+    onSuccess: () => { try { sessionStorage.removeItem(ADMIN_DASHBOARD_SESSION_STORAGE_KEY); } catch {} toast.success("Signed out"); void utils.admin.session.invalidate(); void utils.catalog.adminSnapshot.invalidate(); },
   });
   const create = trpc.catalog.create.useMutation({ onSuccess: () => { toast.success("Item added"); setDraft(null); void refresh(); }, onError: error => toast.error(error.message) });
   const update = trpc.catalog.update.useMutation({ onSuccess: () => { toast.success("Item updated"); setDraft(null); void refresh(); }, onError: error => toast.error(error.message) });

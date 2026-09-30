@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
-import { ADMIN_SESSION_COOKIE } from "./adminAuth";
+import { ADMIN_SESSION_COOKIE, hasAdminSession } from "./adminAuth";
+import { ADMIN_DASHBOARD_SESSION_HEADER } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
 
 type CookieCall = { name: string; value?: string; options: Record<string, unknown> };
@@ -51,9 +52,10 @@ describe("admin dashboard access", () => {
     vi.stubEnv("MANUS_JWT_SECRET", "unit-test-signing-key-never-deployed");
     const { ctx, cookies } = createContext(false);
     const result = await appRouter.createCaller(ctx).admin.login({ username: "inventory-admin", password: "unit-test-password" });
-    expect(result).toEqual({ signedIn: true });
+    expect(result).toMatchObject({ signedIn: true, sessionToken: expect.any(String) });
     expect(cookies[0]).toMatchObject({ name: ADMIN_SESSION_COOKIE, options: { secure: true, httpOnly: true, sameSite: "none", path: "/" } });
     expect(cookies[0]?.value).toEqual(expect.any(String));
+    await expect(hasAdminSession({ headers: { [ADMIN_DASHBOARD_SESSION_HEADER]: result.sessionToken } } as unknown as TrpcContext["req"])).resolves.toBe(true);
   });
 
   it("rejects invalid dashboard credentials", async () => {

@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
+import { ADMIN_DASHBOARD_SESSION_HEADER, ADMIN_DASHBOARD_SESSION_STORAGE_KEY, COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
@@ -48,15 +48,19 @@ const trpcClient = trpc.createClient({
         // session into sessionStorage so we can forward it as a Bearer token.
         // The regular OAuth cookie flow keeps working and takes priority server-side.
         try {
+          const headers: Record<string, string> = {};
           const raw = sessionStorage.getItem("manus-cookie");
           if (raw) {
             const prefix = `${COOKIE_NAME}=`;
             const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
             const token = pair?.trim().slice(prefix.length);
             if (token) {
-              return { Authorization: `Bearer ${token}` };
+              headers.Authorization = `Bearer ${token}`;
             }
           }
+          const adminToken = sessionStorage.getItem(ADMIN_DASHBOARD_SESSION_STORAGE_KEY);
+          if (adminToken) headers[ADMIN_DASHBOARD_SESSION_HEADER] = adminToken;
+          return headers;
         } catch {
           // sessionStorage unavailable
         }

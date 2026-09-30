@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request, Response } from "express";
 import { SignJWT, jwtVerify } from "jose";
+import { ADMIN_DASHBOARD_SESSION_HEADER } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
 
@@ -40,7 +41,9 @@ async function createAdminSession(username: string) {
 }
 
 export async function hasAdminSession(req: Request) {
-  const token = parseCookieHeader(req.headers.cookie ?? "")[ADMIN_SESSION_COOKIE];
+  const headerValue = req.headers[ADMIN_DASHBOARD_SESSION_HEADER];
+  const headerToken = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  const token = parseCookieHeader(req.headers.cookie ?? "")[ADMIN_SESSION_COOKIE] ?? headerToken;
   if (!token || !ENV.adminDashboardUsername) return false;
   try {
     const { payload } = await jwtVerify(token, signingKey(), { algorithms: ["HS256"] });
@@ -53,6 +56,7 @@ export async function hasAdminSession(req: Request) {
 export async function establishAdminSession(res: Response, username: string) {
   const token = await createAdminSession(username);
   res.cookie(ADMIN_SESSION_COOKIE, token, { ...getSessionCookieOptions(), maxAge: SESSION_SECONDS * 1000 });
+  return token;
 }
 
 export function clearAdminSession(res: Response) {

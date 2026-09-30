@@ -49,8 +49,8 @@ export const appRouter = router({
       if (!(await validateAdminCredentials(input.username, input.password))) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
       }
-      await establishAdminSession(ctx.res, input.username);
-      return { signedIn: true } as const;
+      const sessionToken = await establishAdminSession(ctx.res, input.username);
+      return { signedIn: true, sessionToken } as const;
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
       clearAdminSession(ctx.res);
