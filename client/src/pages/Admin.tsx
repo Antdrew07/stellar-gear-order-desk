@@ -35,6 +35,7 @@ export default function Admin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [view, setView] = useState<"inventory" | "orders">("inventory");
 
   const refresh = () => Promise.all([utils.catalog.adminSnapshot.invalidate(), utils.catalog.snapshot.invalidate()]);
   const login = trpc.admin.login.useMutation({
@@ -50,6 +51,8 @@ export default function Admin() {
   const addSection = trpc.catalog.addSection.useMutation({ onSuccess: () => { toast.success("Section added"); setSectionDraft(null); void refresh(); }, onError: error => toast.error(error.message) });
   const updateSection = trpc.catalog.updateSection.useMutation({ onSuccess: () => { toast.success("Section updated"); setSectionDraft(null); void refresh(); }, onError: error => toast.error(error.message) });
   const reorder = trpc.catalog.reorder.useMutation({ onSuccess: () => void refresh(), onError: error => toast.error(error.message) });
+  const orderList = trpc.orders.list.useQuery(undefined, { enabled: session.data?.signedIn === true });
+  const setOrderStatus = trpc.orders.updateStatus.useMutation({ onSuccess: () => { toast.success("Order updated"); void utils.orders.list.invalidate(); }, onError: error => toast.error(error.message) });
 
   const products = (catalog.data?.products ?? []) as ProductRow[];
   const realProducts = products.filter(product => product.kind === "product");
@@ -109,11 +112,17 @@ export default function Admin() {
         <strong>STELLAR GEAR · ADMIN</strong>
         <div className="admin-header-actions">
           <button className="simple-signout" onClick={() => logout.mutate()} disabled={logout.isPending}><LogOut size={14} /> Sign out</button>
-          <button className="simple-ghost" onClick={() => setSectionDraft({ title: "" })}><Plus size={15} /> Add section</button>
-          <button className="simple-primary" onClick={() => setDraft(emptyDraft)}><Plus size={15} /> Add item</button>
+          {view === "inventory" && <>
+            <button className="simple-ghost" onClick={() => setSectionDraft({ title: "" })}><Plus size={15} /> Add section</button>
+            <button className="simple-primary" onClick={() => setDraft(emptyDraft)}><Plus size={15} /> Add item</button>
+          </>}
         </div>
       </header>
-      <main>
+      <nav className="admin-tabs">
+        <button className={view === "inventory" ? "is-active" : ""} onClick={() => setView("inventory")}>Inventory</button>
+        <button className={view === "orders" ? "is-active" : ""} onClick={() => setView("orders")}>Orders{orderList.data && orderList.data.length ? ` (${orderList.data.length})` : ""}</button>
+      </nav>
+      {view === "inventory" && <main>
         <div className="simple-admin-title"><p>STELLAR GEAR</p><h1>Inventory</h1><span>Add items, add section dividers, drag order with the arrows, and control what appears on the price sheet.</span></div>
         <section className="inventory-summary" aria-label="Inventory summary">
           <div><span>Tracked units</span><strong>{trackedUnits}</strong></div>
@@ -157,7 +166,54 @@ export default function Admin() {
             )
           )) : <div className="simple-empty">No items in this view.</div>}
         </section>
-      </main>
+      </main>}
+      {view === "orders" && <main className="orders-main">
+        <div className="simple-admin-title"><p>STELLAR GEAR</p><h1>Orders</h1><span>Every order placed, newest first — what they bought and where to ship it.</span></div>
+        {orderList.isLoading ? <div className="simple-empty">Loading orders…</div> : (orderList.data?.length ?? 0) === 0 ? <div className="simple-empty">No orders yet. Orders placed on the price sheet will show up here.</div> : (
+          <div className="orders-list">
+            {orderList.data?.map(order => (
+              <article className="order-card" key={order.id}>
+                <header className="order-card-head">
+                  <div><strong>{order.orderNumber}</strong><span>{new Date(order.createdAt).toLocaleString()}</span></div>
+                  <div className="order-card-head-right">
+                    <b className={`pay-badge pay-${order.paymentStatus}`}>{order.paymentStatus}</b>
+                    <select value={order.status} disabled={setOrderStatus.isPending} onChange={event => setOrderStatus.mutate({ id: order.id, status: event.target.value as "new" | "reviewing" | "confirmed" | "closed" })}>
+                      <option value="new">New</option>
+                      <option value="reviewing">Reviewing</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+                </header>
+                <div className="order-grid">
+                  <div className="order-block">
+                    <h4>Ship to</h4>
+                    <p>{order.customerName}</p>
+                    <p>{order.address1}{order.address2 ? `, ${order.address2}` : ""}</p>
+                    <p>{order.city}, {order.state} {order.postalCode}</p>
+                  </div>
+                  <div className="order-block">
+                    <h4>Contact</h4>
+                    <p>{order.email}</p>
+                    <p>{order.phone}</p>
+                  </div>
+                </div>
+                {order.notes ? <p className="order-notes"><b>Notes:</b> {order.notes}</p> : null}
+                <div className="order-items">
+                  {order.items.map(item => (
+                    <div className="order-item" key={item.id}><span>{item.quantity}× {item.productName}</span><span>{money(item.lineTotalCents)}</span></div>
+                  ))}
+                </div>
+                <div className="order-totals">
+                  <div><span>Subtotal</span><b>{money(order.subtotalCents)}</b></div>
+                  <div><span>Shipping</span><b>{money(order.shippingCents)}</b></div>
+                  <div className="order-total"><span>Total</span><strong>{money(order.totalCents)}</strong></div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </main>}
       {draft && <div className="simple-editor-backdrop"><form className="simple-editor" onSubmit={save}><button type="button" className="simple-close" onClick={() => setDraft(null)} aria-label="Close editor"><X size={19} /></button><p>STELLAR GEAR</p><h2>{draft.id ? "Edit item" : "Add item"}</h2><label>Item name<input required autoFocus value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /></label><label>Description <small>Optional — shown under the item name</small><textarea className="simple-textarea" rows={2} maxLength={1000} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="Brief description of this item" /></label><label>Price<input required type="number" min="0" step="0.01" value={draft.price} onChange={event => setDraft({ ...draft, price: event.target.value })} /></label><label>Sale price <small>Optional</small><input type="number" min="0" step="0.01" value={draft.salePrice} onChange={event => setDraft({ ...draft, salePrice: event.target.value })} /></label><label>Inventory <small>Enter a whole number. Set 0 for out of stock.</small><input required type="number" min="0" step="1" value={draft.inventory} onChange={event => setDraft({ ...draft, inventory: event.target.value })} /></label><label className="simple-check"><input type="checkbox" checked={draft.inStock} onChange={event => setDraft({ ...draft, inStock: event.target.checked })} /> Show as available on price sheet</label><button className="simple-primary" disabled={create.isPending || update.isPending}><Save size={15} /> Save item</button></form></div>}
       {sectionDraft && <div className="simple-editor-backdrop"><form className="simple-editor" onSubmit={saveSection}><button type="button" className="simple-close" onClick={() => setSectionDraft(null)} aria-label="Close editor"><X size={19} /></button><p>STELLAR GEAR</p><h2>{sectionDraft.id ? "Edit section" : "Add section"}</h2><label>Section title <small>Shows as a red divider above the items that follow it</small><input required autoFocus value={sectionDraft.title} onChange={event => setSectionDraft({ ...sectionDraft, title: event.target.value })} placeholder="e.g. APPAREL" /></label><button className="simple-primary" disabled={addSection.isPending || updateSection.isPending}><Save size={15} /> Save section</button></form></div>}
     </div>
